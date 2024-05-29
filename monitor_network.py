@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from schedule import every, repeat, run_pending # pip install schedule
 from time import sleep
 from collections import defaultdict
+from typing import Optional, Dict
 
 from mac_notifications.client import create_notification, Notification as N # pip install macos_notifications
 
@@ -38,11 +39,12 @@ def set_mac_notification(message):
 
 class StateDurationTracker:
     def __init__(self):
-        self.monitoring_start = None
-        self.current_state = None
-        self.last_change = datetime.now()
-        self.states = defaultdict(timedelta)
-    def change(self, state):
+        self.monitoring_start: Optional[datetime] = None
+        self.current_state: Optional[str] = None
+        self.last_change: datetime = datetime.now()
+        self.states: Dict[str, timedelta] = defaultdict(timedelta)
+        
+    def change(self, state: str) -> timedelta:
         current_state = self.current_state
         now = datetime.now()
         elapsed = now - self.last_change
@@ -53,9 +55,12 @@ class StateDurationTracker:
             self.monitoring_start = now 
         self.current_state = state
         return elapsed
-    def ratio(self, state):
+        
+    def ratio(self, state: str) -> float:
+        if not self.monitoring_start:
+            return 0.0
         return self.states[state] / (datetime.now() - self.monitoring_start)
-
+    
 state_time = {}
 states = StateDurationTracker()
 @filter_repeats
@@ -94,7 +99,7 @@ def check_status():
 
 if __name__ == "__main__":
     try:
-        print("{:19s}\t{:07}\t{}\t{}".format('Time', 'Duration', 'Ratio', 'State'))
+        print("{:19}\t{:7}\t{}\t{}".format('Time', 'Duration', 'Ratio', 'State'))
         check_status()
         while True:
             run_pending()
